@@ -1,12 +1,40 @@
 import React, { useState, useEffect } from 'react';
 import { Star, Phone, Mail, Calendar, MessageCircle, ChevronDown, Menu, X, MapPin, Facebook, Instagram, Twitter, Linkedin } from 'lucide-react';
-import { askGuidanceApi, palmReadingApi, saveLeadApi } from './services/astroApi';
+import { saveLeadApi, askGuidanceApi, palmReadingApi } from './services/astroApi';
 
-// ─── API base URL ────────────────────────────────────────────────────────────
-// In development  → reads from frontend/.env         → http://localhost:5000
-// In production   → reads from frontend/.env.production → https://api.diaastro.in
-// Change the value in those .env files; never hardcode URLs here.
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+// ─── Static data outside component to avoid stale closure warnings ───────────
+const TESTIMONIALS = [
+  {
+    name: "Priya Sharma",
+    location: "Delhi",
+    text: "Ruchi ji's guidance helped me secure my dream job at the exact time she predicted. Her career astrology predictions were spot-on!",
+    rating: 5
+  },
+  {
+    name: "Rajesh Gupta",
+    location: "Mumbai",
+    text: "I was skeptical about share market astrology, but following Ruchi ji's timing advice, I made significant profits. Truly grateful!",
+    rating: 5
+  },
+  {
+    name: "Anita & Vikram",
+    location: "Bangalore",
+    text: "Our marriage was on the rocks. Ruchi ji's remedies and counseling saved our relationship. We're happier than ever!",
+    rating: 5
+  },
+  {
+    name: "Suresh Kumar",
+    location: "Pune",
+    text: "Facing a difficult legal case, Ruchi ji suggested the right muhurat for court appearances. We won! Her legal astrology is phenomenal.",
+    rating: 5
+  },
+  {
+    name: "Neha Kapoor",
+    location: "Chandigarh",
+    text: "My business was struggling. After Ruchi ji's karma dosh remedies and timing guidance, revenue increased by 300% in 6 months!",
+    rating: 5
+  }
+];
 
 export default function DiaAstroWebsite() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -94,11 +122,7 @@ export default function DiaAstroWebsite() {
     setPalmError('');
     setPalmReading('');
     try {
-      const formData = new FormData();
-      formData.append('image', palmImage);
-      formData.append('style', palmStyle);
       const data = await palmReadingApi(palmImage, palmStyle);
-
       if (data.success) {
         setPalmReading(data.reading);
       } else {
@@ -127,7 +151,6 @@ export default function DiaAstroWebsite() {
     setGuidanceResponse('');
     try {
       const data = await askGuidanceApi(guidanceQuestion);
-
       if (data.success) {
         setGuidanceResponse(data.response);
       } else {
@@ -189,38 +212,7 @@ export default function DiaAstroWebsite() {
     }
   ];
 
-  const testimonials = [
-    {
-      name: "Priya Sharma",
-      location: "Delhi",
-      text: "Ruchi ji's guidance helped me secure my dream job at the exact time she predicted. Her career astrology predictions were spot-on!",
-      rating: 5
-    },
-    {
-      name: "Rajesh Gupta",
-      location: "Mumbai",
-      text: "I was skeptical about share market astrology, but following Ruchi ji's timing advice, I made significant profits. Truly grateful!",
-      rating: 5
-    },
-    {
-      name: "Anita & Vikram",
-      location: "Bangalore",
-      text: "Our marriage was on the rocks. Ruchi ji's remedies and counseling saved our relationship. We're happier than ever!",
-      rating: 5
-    },
-    {
-      name: "Suresh Kumar",
-      location: "Pune",
-      text: "Facing a difficult legal case, Ruchi ji suggested the right muhurat for court appearances. We won! Her legal astrology is phenomenal.",
-      rating: 5
-    },
-    {
-      name: "Neha Kapoor",
-      location: "Chandigarh",
-      text: "My business was struggling. After Ruchi ji's karma dosh remedies and timing guidance, revenue increased by 300% in 6 months!",
-      rating: 5
-    }
-  ];
+  const testimonials = TESTIMONIALS;
 
   const faqs = [
     {
@@ -254,7 +246,7 @@ export default function DiaAstroWebsite() {
       setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
     }, 5000);
     return () => clearInterval(timer);
-  }, []);
+  }, [testimonials.length]);
 
   const scrollToSection = (id) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
@@ -451,6 +443,58 @@ export default function DiaAstroWebsite() {
 
         nav a:hover {
           color: #FFD700;
+        }
+
+        /* nav and footer buttons styled to look like links */
+        .nav-link {
+          background: none;
+          border: none;
+          color: #F5F5F5;
+          font-weight: 500;
+          font-size: 0.95rem;
+          font-family: 'Poppins', sans-serif;
+          cursor: pointer;
+          padding: 0;
+          position: relative;
+          transition: color 0.3s;
+        }
+
+        .nav-link::after {
+          content: '';
+          position: absolute;
+          bottom: -5px;
+          left: 0;
+          width: 0;
+          height: 2px;
+          background: linear-gradient(90deg, #D4AF37, #FFD700);
+          transition: width 0.3s;
+        }
+
+        .nav-link:hover::after { width: 100%; }
+        .nav-link:hover { color: #FFD700; }
+
+        .footer-link {
+          background: none;
+          border: none;
+          color: #C0C0C0;
+          font-family: 'Poppins', sans-serif;
+          font-size: 1rem;
+          cursor: pointer;
+          padding: 0;
+          display: block;
+          margin-bottom: 0.5rem;
+          line-height: 1.8;
+          text-align: left;
+          transition: color 0.3s;
+        }
+
+        .footer-link:hover { color: #FFD700; }
+
+        .footer-text {
+          color: #C0C0C0;
+          display: block;
+          margin-bottom: 0.5rem;
+          line-height: 1.8;
         }
 
         .menu-toggle {
@@ -1822,13 +1866,13 @@ export default function DiaAstroWebsite() {
           
           <nav className={isMenuOpen ? 'open' : ''}>
             <ul>
-              <li><a onClick={() => scrollToSection('home')}>Home</a></li>
-              <li><a onClick={() => scrollToSection('services')}>Services</a></li>
-              <li><a onClick={() => scrollToSection('palm')}>Palm Reading</a></li>
-              <li><a onClick={() => scrollToSection('guidance')}>AI Guidance</a></li>
-              <li><a onClick={() => scrollToSection('about')}>About</a></li>
-              <li><a onClick={() => scrollToSection('testimonials')}>Testimonials</a></li>
-              <li><a onClick={() => scrollToSection('contact')}>Contact</a></li>
+              <li><button className="nav-link" onClick={() => scrollToSection('home')}>Home</button></li>
+              <li><button className="nav-link" onClick={() => scrollToSection('services')}>Services</button></li>
+              <li><button className="nav-link" onClick={() => scrollToSection('palm')}>Palm Reading</button></li>
+              <li><button className="nav-link" onClick={() => scrollToSection('guidance')}>AI Guidance</button></li>
+              <li><button className="nav-link" onClick={() => scrollToSection('about')}>About</button></li>
+              <li><button className="nav-link" onClick={() => scrollToSection('testimonials')}>Testimonials</button></li>
+              <li><button className="nav-link" onClick={() => scrollToSection('contact')}>Contact</button></li>
             </ul>
           </nav>
 
@@ -1850,10 +1894,10 @@ export default function DiaAstroWebsite() {
               <MessageCircle size={20} />
               Chat on WhatsApp
             </a>
-            <a onClick={() => scrollToSection('booking')} className="btn btn-secondary">
+            <button onClick={() => scrollToSection('booking')} className="btn btn-secondary">
               <Calendar size={20} />
               Book Appointment
-            </a>
+            </button>
           </div>
         </div>
       </section>
@@ -2326,20 +2370,20 @@ export default function DiaAstroWebsite() {
           </div>
           <div className="footer-section">
             <h3>Quick Links</h3>
-            <a onClick={() => scrollToSection('services')}>Services</a>
-            <a onClick={() => scrollToSection('palm')}>Palm Reading</a>
-            <a onClick={() => scrollToSection('about')}>About Us</a>
-            <a onClick={() => scrollToSection('testimonials')}>Testimonials</a>
-            <a onClick={() => scrollToSection('faq')}>FAQ</a>
-            <a onClick={() => scrollToSection('contact')}>Contact</a>
+            <button className="footer-link" onClick={() => scrollToSection('services')}>Services</button>
+            <button className="footer-link" onClick={() => scrollToSection('palm')}>Palm Reading</button>
+            <button className="footer-link" onClick={() => scrollToSection('about')}>About Us</button>
+            <button className="footer-link" onClick={() => scrollToSection('testimonials')}>Testimonials</button>
+            <button className="footer-link" onClick={() => scrollToSection('faq')}>FAQ</button>
+            <button className="footer-link" onClick={() => scrollToSection('contact')}>Contact</button>
           </div>
           <div className="footer-section">
             <h3>Services</h3>
-            <a>Career Astrology</a>
-            <a>Share Market Guidance</a>
-            <a>Marriage Compatibility</a>
-            <a>Birth Chart Analysis</a>
-            <a>Karma Dosh Remedies</a>
+            <span className="footer-text">Career Astrology</span>
+            <span className="footer-text">Share Market Guidance</span>
+            <span className="footer-text">Marriage Compatibility</span>
+            <span className="footer-text">Birth Chart Analysis</span>
+            <span className="footer-text">Karma Dosh Remedies</span>
           </div>
           <div className="footer-section">
             <h3>Contact Info</h3>
