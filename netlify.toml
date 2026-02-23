@@ -1,0 +1,9 @@
+[build]
+  publish = "build"
+  command = "npm run build"
+
+# This fixes the blank page on refresh for React single-page apps
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
