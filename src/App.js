@@ -45,7 +45,6 @@ export default function DiaAstroWebsite() {
   const [leadSubmitted, setLeadSubmitted] = useState(false);
   const [inlineName, setInlineName] = useState('');
   const [inlinePhone, setInlinePhone] = useState('');
-  const [inlineLoading, setInlineLoading] = useState(false); // kept for API compatibility
   const [inlineError, setInlineError] = useState('');
 
   // Per-feature usage counters (max 2 each)
@@ -2038,9 +2037,8 @@ export default function DiaAstroWebsite() {
                 <button
                   className="inline-lead-btn"
                   onClick={() => submitInlineLead('palm')}
-                  disabled={inlineLoading}
                 >
-                  {inlineLoading ? 'Please wait...' : 'Continue'}
+                  Continue
                 </button>
               </div>
               {inlineError && <p className="inline-lead-error">⚠️ {inlineError}</p>}
@@ -2199,9 +2197,8 @@ export default function DiaAstroWebsite() {
                 <button
                   className="inline-lead-btn"
                   onClick={() => submitInlineLead('guidance')}
-                  disabled={inlineLoading}
                 >
-                  {inlineLoading ? 'Please wait...' : 'Continue'}
+                  Continue
                 </button>
               </div>
               {inlineError && <p className="inline-lead-error">⚠️ {inlineError}</p>}
