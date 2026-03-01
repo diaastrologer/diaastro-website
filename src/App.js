@@ -45,7 +45,7 @@ export default function DiaAstroWebsite() {
   const [leadSubmitted, setLeadSubmitted] = useState(false);
   const [inlineName, setInlineName] = useState('');
   const [inlinePhone, setInlinePhone] = useState('');
-  const [inlineLoading, setInlineLoading] = useState(false);
+  const [inlineLoading, setInlineLoading] = useState(false); // kept for API compatibility
   const [inlineError, setInlineError] = useState('');
 
   // Per-feature usage counters (max 2 each)
@@ -53,20 +53,15 @@ export default function DiaAstroWebsite() {
   const [palmUsageCount, setPalmUsageCount] = useState(0);
   const [guidanceUsageCount, setGuidanceUsageCount] = useState(0);
 
-  const submitInlineLead = async (feature) => {
+  const submitInlineLead = (feature) => {
     if (!inlineName.trim()) { setInlineError('Please enter your name.'); return; }
     const phoneClean = inlinePhone.replace(/\D/g, '');
     if (phoneClean.length < 10) { setInlineError('Please enter a valid 10-digit mobile number.'); return; }
-    setInlineLoading(true);
+    // Unlock immediately — no waiting for server
+    setLeadSubmitted(true);
     setInlineError('');
-    try {
-      await saveLeadApi({ name: inlineName.trim(), phone: phoneClean, feature });
-    } catch (e) {
-      // Unlock even if server is unreachable
-    } finally {
-      setLeadSubmitted(true);
-      setInlineLoading(false);
-    }
+    // Save to backend in background (fire-and-forget)
+    saveLeadApi({ name: inlineName.trim(), phone: phoneClean, feature }).catch(() => {});
   };
 
   const [guidanceQuestion, setGuidanceQuestion] = useState('');
@@ -544,9 +539,33 @@ export default function DiaAstroWebsite() {
         .hero-subtitle {
           font-size: clamp(1.1rem, 2.5vw, 1.5rem);
           color: #E0E0E0;
-          margin-bottom: 3rem;
+          margin-bottom: 1.5rem;
           font-weight: 300;
           letter-spacing: 0.5px;
+        }
+
+        .hero-highlight {
+          display: inline-flex;
+          align-items: flex-start;
+          gap: 0.6rem;
+          background: linear-gradient(135deg, rgba(212,175,55,0.15), rgba(255,215,0,0.08));
+          border: 1px solid rgba(212,175,55,0.45);
+          border-radius: 12px;
+          padding: 0.9rem 1.4rem;
+          margin-bottom: 2.5rem;
+          font-size: clamp(0.85rem, 1.8vw, 1rem);
+          color: #F0E6C0;
+          font-weight: 400;
+          line-height: 1.6;
+          max-width: 680px;
+          text-align: left;
+          box-shadow: 0 0 18px rgba(212,175,55,0.12);
+        }
+
+        .hero-highlight-icon {
+          font-size: 1.1rem;
+          flex-shrink: 0;
+          margin-top: 0.1rem;
         }
 
         .cta-buttons {
@@ -1944,6 +1963,10 @@ export default function DiaAstroWebsite() {
           <p className="hero-subtitle">
             Consult Astrologer Ruchi Bhardwaj for accurate predictions and powerful analysis
           </p>
+          <div className="hero-highlight">
+            <span className="hero-highlight-icon">✨</span>
+            No costly gemstones or rituals recommended — learn powerful manifestation, gratitude, visualization, and mindful intention practices as part of your consultation.
+          </div>
           <div className="cta-buttons">
             <a href="https://wa.me/918625815099" className="btn btn-primary" target="_blank" rel="noopener noreferrer">
               <MessageCircle size={20} />
