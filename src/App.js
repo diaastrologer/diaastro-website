@@ -19,7 +19,7 @@ const TESTIMONIALS = [
   {
     name: "Anita & Vikram",
     location: "Bangalore",
-    text: "Our marriage was on the rocks. Ruchi ji's remedies and counseling saved our relationship. We're happier than ever!",
+    text: "Our marriage was on the rocks. Ruchi ji's analysis and counseling saved our relationship. We're happier than ever!",
     rating: 5
   },
   {
@@ -31,7 +31,7 @@ const TESTIMONIALS = [
   {
     name: "Neha Kapoor",
     location: "Chandigarh",
-    text: "My business was struggling. After Ruchi ji's karma dosh remedies and timing guidance, revenue increased by 300% in 6 months!",
+    text: "My business was struggling. After Ruchi ji's karma dosh analysis and timing guidance, revenue increased by 300% in 6 months!",
     rating: 5
   }
 ];
@@ -41,42 +41,31 @@ export default function DiaAstroWebsite() {
   const [scrolled, setScrolled] = useState(false);
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
 
-  // Lead Gate state
-  const [leadUnlocked, setLeadUnlocked] = useState(false);
-  const [showLeadModal, setShowLeadModal] = useState(false);
-  const [leadFeature, setLeadFeature] = useState(''); // 'palm' or 'guidance'
-  const [leadName, setLeadName] = useState('');
-  const [leadPhone, setLeadPhone] = useState('');
-  const [leadLoading, setLeadLoading] = useState(false);
-  const [leadError, setLeadError] = useState('');
+  // Inline lead capture state (shared — submitted once, unlocks both features)
+  const [leadSubmitted, setLeadSubmitted] = useState(false);
+  const [inlineName, setInlineName] = useState('');
+  const [inlinePhone, setInlinePhone] = useState('');
+  const [inlineLoading, setInlineLoading] = useState(false);
+  const [inlineError, setInlineError] = useState('');
 
-  const requireLead = (feature) => {
-    if (leadUnlocked) return true;
-    setLeadFeature(feature);
-    setShowLeadModal(true);
-    return false;
-  };
+  // Per-feature usage counters (max 2 each)
+  const FEATURE_LIMIT = 2;
+  const [palmUsageCount, setPalmUsageCount] = useState(0);
+  const [guidanceUsageCount, setGuidanceUsageCount] = useState(0);
 
-  const submitLead = async () => {
-    if (!leadName.trim()) { setLeadError('Please enter your name.'); return; }
-    const phoneClean = leadPhone.replace(/\D/g, '');
-    if (phoneClean.length < 10) { setLeadError('Please enter a valid 10-digit mobile number.'); return; }
-    setLeadLoading(true);
-    setLeadError('');
+  const submitInlineLead = async (feature) => {
+    if (!inlineName.trim()) { setInlineError('Please enter your name.'); return; }
+    const phoneClean = inlinePhone.replace(/\D/g, '');
+    if (phoneClean.length < 10) { setInlineError('Please enter a valid 10-digit mobile number.'); return; }
+    setInlineLoading(true);
+    setInlineError('');
     try {
-      const data = await saveLeadApi({ name: leadName.trim(), phone: phoneClean, feature: leadFeature });
-      if (data.success) {
-        setLeadUnlocked(true);
-        setShowLeadModal(false);
-      } else {
-        setLeadError(data.error || 'Something went wrong. Please try again.');
-      }
+      await saveLeadApi({ name: inlineName.trim(), phone: phoneClean, feature });
     } catch (e) {
-      // Even if server is down, unlock after saving locally
-      setLeadUnlocked(true);
-      setShowLeadModal(false);
+      // Unlock even if server is unreachable
     } finally {
-      setLeadLoading(false);
+      setLeadSubmitted(true);
+      setInlineLoading(false);
     }
   };
 
@@ -117,7 +106,8 @@ export default function DiaAstroWebsite() {
 
   const scanPalm = async () => {
     if (!palmImage) return;
-    if (!requireLead('palm')) return;
+    if (!leadSubmitted) return;
+    if (palmUsageCount >= FEATURE_LIMIT) return;
     setPalmLoading(true);
     setPalmError('');
     setPalmReading('');
@@ -125,6 +115,7 @@ export default function DiaAstroWebsite() {
       const data = await palmReadingApi(palmImage, palmStyle);
       if (data.success) {
         setPalmReading(data.reading);
+        setPalmUsageCount(prev => prev + 1);
       } else {
         setPalmError(data.error || 'Unable to read palm. Please try again.');
       }
@@ -145,7 +136,8 @@ export default function DiaAstroWebsite() {
 
   const askGuidance = async () => {
     if (!guidanceQuestion.trim()) return;
-    if (!requireLead('guidance')) return;
+    if (!leadSubmitted) return;
+    if (guidanceUsageCount >= FEATURE_LIMIT) return;
     setGuidanceLoading(true);
     setGuidanceError('');
     setGuidanceResponse('');
@@ -153,6 +145,7 @@ export default function DiaAstroWebsite() {
       const data = await askGuidanceApi(guidanceQuestion);
       if (data.success) {
         setGuidanceResponse(data.response);
+        setGuidanceUsageCount(prev => prev + 1);
       } else {
         setGuidanceError(data.error || 'Unable to get guidance. Please try again.');
       }
@@ -193,7 +186,7 @@ export default function DiaAstroWebsite() {
     {
       icon: "🏥",
       title: "Health & Wealth Predictions",
-      description: "Preventive insights for wellbeing and prosperity. Identify health risks, financial opportunities, and remedies for lasting abundance."
+      description: "Preventive insights for wellbeing and prosperity. Identify health risks, financial opportunities, and analysis for lasting abundance."
     },
     {
       icon: "🌟",
@@ -202,8 +195,8 @@ export default function DiaAstroWebsite() {
     },
     {
       icon: "🔮",
-      title: "Karma Dosh Remedies",
-      description: "Identify and resolve karmic debts. Specialized remedies for Mangal Dosh, Kaal Sarp Dosh, Pitra Dosh, and ancestral karma."
+      title: "Karma Dosh Analysis",
+      description: "Identify and resolve karmic debts. Specialized analysis for Mangal Dosh, Kaal Sarp Dosh, Pitra Dosh, and ancestral karma."
     },
     {
       icon: "📅",
@@ -229,7 +222,7 @@ export default function DiaAstroWebsite() {
     },
     {
       question: "What is Karma Dosh and how to resolve it?",
-      answer: "Karma Dosh refers to karmic debts from past actions (this life or previous lives) manifesting as obstacles. Common types include Mangal Dosh (affecting marriage), Kaal Sarp Dosh (blocking progress), and Pitra Dosh (ancestral karma). Remedies include specific mantras, gemstones, rituals, charity, and lifestyle corrections based on your unique chart."
+      answer: "Karma Dosh refers to karmic debts from past actions (this life or previous lives) manifesting as obstacles. Common types include Mangal Dosh (affecting marriage), Kaal Sarp Dosh (blocking progress), and Pitra Dosh (ancestral karma). Analysis include specific mantras, gemstones, rituals, charity, and lifestyle corrections based on your unique chart."
     },
     {
       question: "How to choose the right muhurat?",
@@ -1745,70 +1738,132 @@ export default function DiaAstroWebsite() {
         .palm-tips ul { list-style: none; padding: 0; }
         .palm-tips ul li { color: rgba(255,255,255,0.55); font-size: 0.82rem; padding: 0.2rem 0; }
         .palm-tips ul li::before { content: '✦ '; color: #D4AF37; }
+
+        /* Usage counter badge */
+        .usage-counter {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          background: rgba(212,175,55,0.1);
+          border: 1px solid rgba(212,175,55,0.3);
+          border-radius: 50px;
+          padding: 0.35rem 1rem;
+          font-size: 0.82rem;
+          color: #D4AF37;
+          margin-bottom: 1.2rem;
+        }
+
+        .usage-counter.last-use {
+          background: rgba(255,150,50,0.1);
+          border-color: rgba(255,150,50,0.4);
+          color: #ffaa55;
+        }
+
+        .usage-counter.used-up {
+          background: rgba(255,80,80,0.1);
+          border-color: rgba(255,80,80,0.35);
+          color: #ff8080;
+        }
+
+        /* Limit reached modal */
+        .limit-modal-icon { font-size: 3rem; text-align: center; display: block; margin-bottom: 1rem; }
+
+        .limit-modal h2 {
+          font-family: 'Playfair Display', serif;
+          font-size: 1.6rem;
+          color: #FFD700;
+          text-align: center;
+          margin-bottom: 0.6rem;
+        }
+
+        .limit-modal-sub {
+          text-align: center;
+          color: #A0A0B0;
+          font-size: 0.92rem;
+          margin-bottom: 1.8rem;
+          line-height: 1.7;
+        }
+
+        .limit-modal-sub strong { color: #D4AF37; }
+
+        .limit-modal .cta-buttons {
+          flex-direction: column;
+          gap: 0.8rem;
+        }
+
+        .limit-modal .cta-buttons a,
+        .limit-modal .cta-buttons button {
+          width: 100%;
+          justify-content: center;
+        }
+
+        /* Inline lead capture form */
+        .inline-lead-form {
+          margin-bottom: 1.5rem;
+          padding: 1.2rem 1.4rem;
+          background: rgba(212,175,55,0.07);
+          border: 1px solid rgba(212,175,55,0.25);
+          border-radius: 14px;
+        }
+
+        .inline-lead-inputs {
+          display: flex;
+          gap: 0.8rem;
+          flex-wrap: wrap;
+          align-items: center;
+        }
+
+        .inline-lead-input {
+          flex: 1;
+          min-width: 160px;
+          background: rgba(255,255,255,0.06);
+          border: 1px solid rgba(212,175,55,0.3);
+          border-radius: 8px;
+          padding: 0.65rem 1rem;
+          color: #F5F5F5;
+          font-family: 'Poppins', sans-serif;
+          font-size: 0.9rem;
+        }
+
+        .inline-lead-input::placeholder { color: rgba(255,255,255,0.35); }
+        .inline-lead-input:focus { outline: none; border-color: #D4AF37; }
+
+        .inline-lead-btn {
+          background: linear-gradient(135deg, #D4AF37, #FFD700);
+          color: #0B0F2F;
+          border: none;
+          border-radius: 8px;
+          padding: 0.65rem 1.4rem;
+          font-family: 'Poppins', sans-serif;
+          font-weight: 600;
+          font-size: 0.9rem;
+          cursor: pointer;
+          white-space: nowrap;
+          transition: opacity 0.2s;
+        }
+
+        .inline-lead-btn:hover { opacity: 0.88; }
+        .inline-lead-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+        .inline-lead-note {
+          margin-top: 0.7rem;
+          font-size: 0.78rem;
+          color: rgba(255,255,255,0.45);
+        }
+
+        .inline-lead-error {
+          margin-top: 0.5rem;
+          font-size: 0.82rem;
+          color: #ff8080;
+        }
       `}</style>
 
       {/* SEO Meta Information */}
       <div className="seo-hidden">
         <h1>Best Astrologer in India - Ruchi Bhardwaj | Dia Astro</h1>
         <h2>Share Market Astrology, Marriage Prediction, Career Astrology</h2>
-        <p>Consult India's leading Vedic astrologer Ruchi Bhardwaj for accurate predictions on career, love, marriage, business, share market, legal cases, and karma dosh remedies. Expert birth chart analysis and muhurat selection.</p>
+        <p>Consult India's leading Vedic astrologer Ruchi Bhardwaj for accurate predictions on career, love, marriage, business, share market, legal cases, and karma dosh analysis. Expert birth chart analysis and muhurat selection.</p>
       </div>
-
-      {/* Lead Gate Modal */}
-      {showLeadModal && (
-        <div className="lead-overlay" onClick={(e) => e.target === e.currentTarget && setShowLeadModal(false)}>
-          <div className="lead-modal">
-            <span className="lead-modal-icon">
-              {leadFeature === 'palm' ? '🖐' : '🔮'}
-            </span>
-            <h2>
-              {leadFeature === 'palm' ? 'Unlock Palm Reading' : 'Unlock AI Guidance'}
-            </h2>
-            <p className="lead-modal-sub">
-              Enter your details to receive your <strong>free {leadFeature === 'palm' ? 'AI Palm Reading' : 'Astrology Guidance'}</strong>.<br/>
-              Ruchi Bhardwaj may reach out with personalized insights.
-            </p>
-
-            <div className="lead-input-group">
-              <label>Your Name *</label>
-              <input
-                type="text"
-                placeholder="Enter your full name"
-                value={leadName}
-                onChange={(e) => setLeadName(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && submitLead()}
-                autoFocus
-              />
-            </div>
-
-            <div className="lead-input-group">
-              <label>Mobile Number *</label>
-              <input
-                type="tel"
-                placeholder="+91 XXXXX XXXXX"
-                value={leadPhone}
-                onChange={(e) => setLeadPhone(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && submitLead()}
-                maxLength={15}
-              />
-            </div>
-
-            {leadError && <div className="lead-error">⚠️ {leadError}</div>}
-
-            <button className="lead-submit-btn" onClick={submitLead} disabled={leadLoading}>
-              {leadLoading
-                ? <><span className="loading-star">✦</span> Please wait...</>
-                : <>{leadFeature === 'palm' ? '🖐 Get My Palm Reading' : '🔮 Get My Guidance'}</>
-              }
-            </button>
-
-            <p className="lead-privacy">
-              🔒 Your information is safe. We respect your privacy.<br/>
-              <span>No spam. Only personalised cosmic guidance.</span>
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* Cosmic Background */}
       <div className="cosmic-bg">
@@ -1887,10 +1942,10 @@ export default function DiaAstroWebsite() {
         <div className="hero-content">
           <h1>Find Clarity in Career, Love, Business & Destiny</h1>
           <p className="hero-subtitle">
-            Consult Astrologer Ruchi Bhardwaj for accurate predictions and powerful remedies
+            Consult Astrologer Ruchi Bhardwaj for accurate predictions and powerful analysis
           </p>
           <div className="cta-buttons">
-            <a href="https://wa.me/919654710101" className="btn btn-primary" target="_blank" rel="noopener noreferrer">
+            <a href="https://wa.me/918625815099" className="btn btn-primary" target="_blank" rel="noopener noreferrer">
               <MessageCircle size={20} />
               Chat on WhatsApp
             </a>
@@ -1935,8 +1990,51 @@ export default function DiaAstroWebsite() {
         </p>
         <div className="palm-section-wrap">
           <div className="palm-badge">✦ AI Powered · Vedic Palmistry · Instant Reading</div>
-          {leadUnlocked && (
-            <div className="lead-unlocked-badge">✓ Access Unlocked — Enjoy your free reading</div>
+
+          {/* Inline lead capture — shown until submitted */}
+          {!leadSubmitted && (
+            <div className="inline-lead-form">
+              <div className="inline-lead-inputs">
+                <input
+                  type="text"
+                  className="inline-lead-input"
+                  placeholder="Your Name"
+                  value={inlineName}
+                  onChange={(e) => setInlineName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && submitInlineLead('palm')}
+                />
+                <input
+                  type="tel"
+                  className="inline-lead-input"
+                  placeholder="Phone Number"
+                  value={inlinePhone}
+                  onChange={(e) => setInlinePhone(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && submitInlineLead('palm')}
+                  maxLength={15}
+                />
+                <button
+                  className="inline-lead-btn"
+                  onClick={() => submitInlineLead('palm')}
+                  disabled={inlineLoading}
+                >
+                  {inlineLoading ? 'Please wait...' : 'Continue'}
+                </button>
+              </div>
+              {inlineError && <p className="inline-lead-error">⚠️ {inlineError}</p>}
+              <p className="inline-lead-note">We capture your Name and Phone Number for future campaign communication.</p>
+            </div>
+          )}
+
+          {/* Per-feature usage counter — shown after lead submitted */}
+          {leadSubmitted && palmUsageCount < FEATURE_LIMIT && (
+            <div className={`usage-counter${palmUsageCount === FEATURE_LIMIT - 1 ? ' last-use' : ''}`}>
+              ✦ {FEATURE_LIMIT - palmUsageCount} free {FEATURE_LIMIT - palmUsageCount === 1 ? 'use' : 'uses'} remaining
+            </div>
+          )}
+          {leadSubmitted && palmUsageCount >= FEATURE_LIMIT && (
+            <div className="usage-counter used-up">
+              ✦ You have reached the maximum free usage limit. Please contact us to continue.
+            </div>
           )}
 
           {/* Style selector */}
@@ -1997,10 +2095,12 @@ export default function DiaAstroWebsite() {
           <button
             className="palm-scan-btn"
             onClick={scanPalm}
-            disabled={!palmImage || palmLoading}
+            disabled={!palmImage || palmLoading || !leadSubmitted || palmUsageCount >= FEATURE_LIMIT}
           >
             {palmLoading ? (
               <><span className="loading-star">✦</span> Reading Your Palm Lines...</>
+            ) : palmUsageCount >= FEATURE_LIMIT ? (
+              <>🔒 Free Limit Reached</>
             ) : (
               <>🔮 Scan My Palm</>
             )}
@@ -2019,7 +2119,7 @@ export default function DiaAstroWebsite() {
               <div className="palm-reading-text">{palmReading}</div>
               <div className="palm-reading-cta">
                 <a
-                  href="https://wa.me/919654710101?text=Hi, I would like a detailed palm reading consultation"
+                  href="https://wa.me/918625815099?text=Hi, I would like a detailed palm reading consultation"
                   className="btn btn-primary"
                   target="_blank"
                   rel="noopener noreferrer"
@@ -2051,8 +2151,51 @@ export default function DiaAstroWebsite() {
           <div className="guidance-orb-badge">
             ⭐ Powered by Gemini AI · Vedic Astrology
           </div>
-          {leadUnlocked && (
-            <div className="lead-unlocked-badge">✓ Access Unlocked — Enjoy your free guidance</div>
+
+          {/* Inline lead capture — shown until submitted */}
+          {!leadSubmitted && (
+            <div className="inline-lead-form">
+              <div className="inline-lead-inputs">
+                <input
+                  type="text"
+                  className="inline-lead-input"
+                  placeholder="Your Name"
+                  value={inlineName}
+                  onChange={(e) => setInlineName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && submitInlineLead('guidance')}
+                />
+                <input
+                  type="tel"
+                  className="inline-lead-input"
+                  placeholder="Phone Number"
+                  value={inlinePhone}
+                  onChange={(e) => setInlinePhone(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && submitInlineLead('guidance')}
+                  maxLength={15}
+                />
+                <button
+                  className="inline-lead-btn"
+                  onClick={() => submitInlineLead('guidance')}
+                  disabled={inlineLoading}
+                >
+                  {inlineLoading ? 'Please wait...' : 'Continue'}
+                </button>
+              </div>
+              {inlineError && <p className="inline-lead-error">⚠️ {inlineError}</p>}
+              <p className="inline-lead-note">We capture your Name and Phone Number for future campaign communication.</p>
+            </div>
+          )}
+
+          {/* Per-feature usage counter — shown after lead submitted */}
+          {leadSubmitted && guidanceUsageCount < FEATURE_LIMIT && (
+            <div className={`usage-counter${guidanceUsageCount === FEATURE_LIMIT - 1 ? ' last-use' : ''}`}>
+              ✦ {FEATURE_LIMIT - guidanceUsageCount} free {FEATURE_LIMIT - guidanceUsageCount === 1 ? 'use' : 'uses'} remaining
+            </div>
+          )}
+          {leadSubmitted && guidanceUsageCount >= FEATURE_LIMIT && (
+            <div className="usage-counter used-up">
+              ✦ You have reached the maximum free usage limit. Please contact us to continue.
+            </div>
           )}
 
           <textarea
@@ -2079,13 +2222,15 @@ export default function DiaAstroWebsite() {
           <button
             className="guidance-submit-btn"
             onClick={askGuidance}
-            disabled={guidanceLoading || !guidanceQuestion.trim()}
+            disabled={guidanceLoading || !guidanceQuestion.trim() || !leadSubmitted || guidanceUsageCount >= FEATURE_LIMIT}
           >
             {guidanceLoading ? (
               <>
                 <span className="loading-star">✦</span>
                 Consulting the Stars...
               </>
+            ) : guidanceUsageCount >= FEATURE_LIMIT ? (
+              <>🔒 Free Limit Reached</>
             ) : (
               <>🔮 Get Astrology Guidance</>
             )}
@@ -2106,7 +2251,7 @@ export default function DiaAstroWebsite() {
               <div className="guidance-response-text">{guidanceResponse}</div>
               <div className="guidance-response-cta">
                 <a
-                  href="https://wa.me/919654710101?text=Hi, I would like a detailed consultation"
+                  href="https://wa.me/918625815099?text=Hi, I would like a detailed consultation"
                   className="btn btn-primary"
                   target="_blank"
                   rel="noopener noreferrer"
@@ -2144,7 +2289,7 @@ export default function DiaAstroWebsite() {
             <p>
               With deep knowledge of Vedic astrology and years of experience guiding thousands of clients, 
               Ruchi Bhardwaj combines ancient wisdom with modern understanding to provide accurate predictions 
-              and practical remedies.
+              and practical analysis.
             </p>
             <p>
               Her unique approach blends spiritual insight with analytical precision, offering clarity on 
@@ -2171,7 +2316,7 @@ export default function DiaAstroWebsite() {
               </div>
               <div className="expertise-item">
                 <Star size={18} fill="#FFD700" />
-                <span>Karma Dosh Remedies</span>
+                <span>Karma Dosh Analysis</span>
               </div>
               <div className="expertise-item">
                 <Star size={18} fill="#FFD700" />
@@ -2191,14 +2336,14 @@ export default function DiaAstroWebsite() {
             ⏰ Limited slots available - Book your session today
           </div>
           <div className="cta-buttons">
-            <a href="https://wa.me/919654710101?text=Hi, I would like to book an astrology consultation" 
+            <a href="https://wa.me/918625815099?text=Hi, I would like to book an astrology consultation" 
                className="btn btn-primary" 
                target="_blank" 
                rel="noopener noreferrer">
               <MessageCircle size={20} />
               Book via WhatsApp
             </a>
-            <a href="tel:+919654710101" className="btn btn-secondary">
+            <a href="tel:+918625815099" className="btn btn-secondary">
               <Phone size={20} />
               Call Now
             </a>
@@ -2260,7 +2405,7 @@ export default function DiaAstroWebsite() {
               <Phone size={24} />
               <div className="contact-details">
                 <h3>Phone</h3>
-                <p><a href="tel:+919654710101">+91 9654710101</a></p>
+                <p><a href="tel:+918625815099">+91 8625815099</a></p>
               </div>
             </div>
             <div className="contact-item">
@@ -2341,7 +2486,7 @@ export default function DiaAstroWebsite() {
                   <option value="health">Health & Wealth</option>
                   <option value="birthchart">Birth Chart Analysis</option>
                   <option value="legal">Legal Case Astrology</option>
-                  <option value="karma">Karma Dosh Remedies</option>
+                  <option value="karma">Karma Dosh Analysis</option>
                   <option value="muhurat">Muhurat Selection</option>
                   <option value="other">Other/General</option>
                 </select>
@@ -2383,11 +2528,11 @@ export default function DiaAstroWebsite() {
             <span className="footer-text">Share Market Guidance</span>
             <span className="footer-text">Marriage Compatibility</span>
             <span className="footer-text">Birth Chart Analysis</span>
-            <span className="footer-text">Karma Dosh Remedies</span>
+            <span className="footer-text">Karma Dosh Analysis</span>
           </div>
           <div className="footer-section">
             <h3>Contact Info</h3>
-            <p>Phone: <a href="tel:+919654710101">+91 9654710101</a></p>
+            <p>Phone: <a href="tel:+918625815099">+91 8625815099</a></p>
             <p>Email: <a href="mailto:ruchi.bhardwaj@diaastro.in">ruchi.bhardwaj@diaastro.in</a></p>
             <p>Domain: diaastro.in</p>
           </div>
@@ -2399,7 +2544,7 @@ export default function DiaAstroWebsite() {
 
       {/* WhatsApp Float Button */}
       <a 
-        href="https://wa.me/919654710101?text=Hi, I would like to consult with Ruchi Bhardwaj" 
+        href="https://wa.me/918625815099?text=Hi, I would like to consult with Ruchi Bhardwaj" 
         className="whatsapp-float"
         target="_blank"
         rel="noopener noreferrer"
